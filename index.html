@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Eruozino</title>
+</head>
+<body>
+    <section class="showcase">
+
+        <header>
+            <h2 class="logo"><a href="index.html">Eruozino</a></h2>
+        </header>
+
+        <!--Stock video by Tyler Oerlemans: https://www.pexels.com/video/an-aerial-footage-of-downtown-toronto-during-sunset-9715850/-->
+        <video src="/videos/Toronto.mp4" muted loop autoplay></video>
+        
+        <!--Song: Crash by EDEN -->
+        <!--<audio src="/music/Eden-soundtrack.mp3" controls loop autoplay></audio>-->
+
+        <div class="container">
+            <div class="ghost"></div>
+            <div class="navigation">
+                <div class="circle toggle"><a href="#">About me</a></div>
+                <div class="circle"><a href="/pages/education/education.html">Education</a></div>
+                <div class="circle"><a href="/pages/experience/experience.html">Experience</a></div>
+                <div class="circle"><a href="/pages/certifications/certifications.html">Certifications</a></div>
+                <div class="circle"><a href="/pages/projects/projects.html">Projects</a></div>
+            </div>
+            <div class="text">
+                <h2>Eruozino Kagho</h2>
+                <p>Software Developer</p>
+            </div>
+        </div>  
+    </section>
+
+    
+    <section class = "abt">
+        <div class = "container">       
+            <div class="aboutme">
+                <div></div>
+                <div class="toggleX">About me</div>
+                <div>
+                    <h3>Hi!</h3>
+                    <p>I'm a recent graduate from the University of Ottawa with interests in software development, system simulations, web development and data analysis to name a few.</p>
+                    <p>I currently work as a Salesforce developer intern at <a href="https://www.speridian.com/">Speridian Technologies</a>, a global business and technology solutions provider, that help clients modernize their businesses through Digital Transformation.</p>
+                    <p>Outside of software, I am a heavy film and music enthusiast currently working on a few indie projects. </p>
+                    <h3>Contact:</h3>
+                    <ul>
+                        <li>Email: Eruozino@gmail.com</li>
+                        <li><a href = "https://www.github.com/eruozino">Github</a> </li>
+                        <li><a href = "/Files/Eruozino Kagho.pdf">Resume</a> </li>
+                        <li><a href = "https://www.linkedin.com/in/eruozino">LinkedIn</a> </li>
+                    </ul>
+                </div>  
+            </div>
+        </div>
+    </section>
+    
+    <script>
+        const aToggle = document.querySelector('.toggle');
+        const xToggle = document.querySelector('.toggleX');
+        const showcase = document.querySelector('.showcase');
+        const abt = document.querySelector('.abt');
+  
+        
+        aToggle.addEventListener('click', () => {
+            showcase.classList.toggle('active');
+            abt.classList.toggle('active');
+
+        })
+
+        
+        xToggle.addEventListener('click', () => {
+            showcase.classList.toggle('active');
+            abt.classList.toggle('active');
+        })
+        
+        /*
+        showcase.addEventListener('click', () => {
+            showcase.classList.toggle('active');
+            abt.classList.toggle('active');
+
+        })*/
+    </script>
+
+</body>
+</html>

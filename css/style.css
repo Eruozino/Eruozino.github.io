@@ -1,0 +1,256 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant:wght@300&display=swap');
+
+* {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+    font-family: 'Cormorant', sans-serif;
+}
+
+body {
+    background-image: url("/images/Paper\ Crumbled\ Background.jpeg");
+    background-color: #cccccc;
+   }
+
+a {
+    text-decoration: none;
+    color: #00bfff;
+    font-weight: 10000;
+}
+
+p{
+    line-height: 25px;
+    margin: 23px 0;
+}
+
+ul {
+    list-style-type: none;
+}
+
+header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 40px 100px;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header .logo a{
+    color: #fff;
+    text-decoration: none;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.showcase {
+    /*
+    border: 2px solid gray;*/
+    height: 90vh;
+    position: absolute;
+    z-index: 500;
+    right:0;
+    width:100%;
+    min-height: 100vh;
+    padding: 100px;
+}
+
+.showcase.active {
+    bottom: 600px;
+}
+
+.showcase video {
+    position: absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    object-fit: cover;
+}
+
+.showcase audio {
+    position:absolute;
+    bottom:0;
+    right:0;
+}
+
+.showcase .container {
+    /*
+    border: 2px solid green;*/
+    height: 90vh;
+    z-index: 750;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.showcase .container .ghost{
+    /*
+    border: 2px solid blue;*/
+    width: 40vh;
+    height: 5vh;
+    margin: 1px;
+}
+
+.showcase .container .navigation{
+    /*
+    border: 2px solid blue;*/
+    width: 50vh;
+    height: 30vh;
+    margin: 1px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.showcase .container .text{
+    /*
+    border: 2px solid red;*/
+    z-index: 850;
+    width: 80vh;
+    height: 10vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.navigation {
+    visibility:visible;
+    z-index: 800;
+}
+
+.navigation.active {
+    visibility: hidden;
+}
+
+.navigation .circle a{
+    text-decoration: none;
+    font-size: 24px;
+    color: #fff;
+}
+
+.navigation .circle a:hover {
+    font-size: 24px;
+    color: #2f4f4f;
+    border-radius: 25px;
+    background: #fff;
+    padding: 1px;
+}
+
+.navigation .circle:nth-child(1) {
+    transform: translateY(-70px);
+}
+.navigation .circle:nth-child(2) {
+    transform: translate(150px);
+}
+.navigation .circle:nth-child(3) {
+    transform: translate(150px) translateY(70px);
+}
+.navigation .circle:nth-child(4) {
+    transform: translate(-150px) translateY(40px);
+}
+.navigation .circle:nth-child(5) {
+    transform: translate(-150px) translateY(-90px);
+}
+
+.text {
+    color:#fff;
+}
+
+.text h2{
+    text-transform: uppercase;
+}
+
+.abt {
+    /*
+    border: 2px solid gray;*/
+    visibility:hidden;
+    height: 90vh;
+    position: absolute;
+    z-index: 500;
+    right:0;
+    width:100%;
+    min-height: 100vh;
+    padding: 100px;
+}
+
+.abt.active{
+    visibility:visible;
+}
+
+.abt .container {
+    /*
+    border: 2px solid green;*/
+    height: 90vh;
+    z-index: 750;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.toggleX {
+    color: #2f4f4f;
+    text-decoration: none;
+    font-size: 24px;
+    transform:translateY(-70px);
+    cursor:pointer;
+}
+
+.toggleX.active{
+    visibility:visible;
+}
+
+.toggleX:hover {
+    font-size: 24px;
+    color: #fff;
+    border-radius: 25px;
+    background: #2f4f4f;
+    padding: 1px;
+}
+
+
+
+.abt .container .aboutme {
+    /*
+    border: 2px solid yellow;*/
+    color:#2f4f4f;
+    width: 60vh;
+    height: 80vh;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content:flex-end;
+    align-items: center;
+    text-align: center;
+}
+
+
+
+@media (max-height: 500px)
+{
+  .showcase,
+  .showcase header
+  {
+    padding: 40px;
+  }
+
+  .showcase .container .navigation {
+    visibility:hidden;
+  }
+
+  .text {
+      visibility:hidden;
+  }
+
+  .abt {
+      visibility:hidden;
+  }
+
+}
