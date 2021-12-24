@@ -81,13 +81,15 @@ header .logo a{
 }
 
 .showcase .container div {
+    background-color: rgba(255, 255, 255, 0.5);
     display:flex;
-    margin:20px 0;
+    margin:20px 20px;
     flex-direction: row;
     justify-content: space-between;
 }
 
 .showcase .container div div {
+    background: none;
     display:flex;
     flex-direction: column;
 }
