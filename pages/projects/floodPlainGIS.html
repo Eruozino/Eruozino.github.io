@@ -1,0 +1,321 @@
+<html>
+    <head>
+        <title>Flood Plains</title>
+
+        <style>
+            html,body,#viewDiv {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+            }
+        </style>
+
+        <link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css">
+        <script src="https://js.arcgis.com/4.30/"></script>
+
+        <script>
+            require(
+                ["esri/config", "esri/Map", "esri/views/MapView", "esri/layers/FeatureLayer", "esri/layers/GraphicsLayer", "esri/widgets/Search", "esri/widgets/BasemapToggle", "esri/Graphic"], //Referenced modules
+                function(Config, Map, MapView, FeatureLayer, GraphicsLayer, Search, BasemapToggle, Graphic){
+
+                    //Feature Layers
+                    const addressesFeatureLayer = new FeatureLayer({
+                        url: "https://services3.arcgis.com/b9WvedVPoizGfvfD/ArcGIS/rest/services/COTGEO_ADDRESS_POINT/FeatureServer/0",
+                        outFields: ["ADDRESS_ID", "ADDRESS_POINT_ID"]
+                    });
+                    const parcelsFeatureLayer = new FeatureLayer({
+                        url: "https://services3.arcgis.com/b9WvedVPoizGfvfD/ArcGIS/rest/services/COTGEO_MUN_PARCEL/FeatureServer/0",
+                        outFields: ["PARCELID","ADDRESS_ID", "ADDRESS_POINT_ID"]
+                    });
+                    const cityWardsFeatureLayer = new FeatureLayer({
+                        url: "https://services3.arcgis.com/b9WvedVPoizGfvfD/ArcGIS/rest/services/CityWards/FeatureServer/0",
+                        outFields: ["AREA_NAME"]
+                    });
+
+                    // TRCA Regulated Area
+                    const renderRegulatedAreas = {
+                        type: "unique-value",
+                        field: "AREA_TYPE",
+                        defaultSymbol: {
+                            type: "simple-fill",
+                            color: "orange"
+                        },
+                        uniqueValueInfos: [
+                            styleLayer("CITW", "orange"),
+                        ]
+                    }
+                    const TRCA_RegulatedArea_Popup = {
+                        title: "TRCA Regulation 2023 - Regulated Area 2023",
+                        content: ""
+                    };
+                    const TRCA_RegulatedArea_FeatureLayer = new FeatureLayer({
+                        url: "https://services1.arcgis.com/d0ZCwU7eGKVeNiEE/ArcGIS/rest/services/TRCA_Regulation_2023_WFL1/FeatureServer/36",
+                        outFields: ["*"],
+                        opacity: 0.5,
+                        popupTemplate: TRCA_RegulatedArea_Popup,
+                        renderer: renderRegulatedAreas
+                    });
+
+                    // TRCW Flood Plain
+                    const TRCA_FloodHazard_Popup = {
+                        title: "TRCA Regulation 2023 - Flood Hazard (Engineered)",
+                        content: "Watershed: {Watershed}"
+                    };
+                    const TRCA_FloodHazard_FeatureLayer = new FeatureLayer({
+                        url: "https://services1.arcgis.com/d0ZCwU7eGKVeNiEE/ArcGIS/rest/services/TRCA_Regulation_2023_WFL1/FeatureServer/28",
+                        outFields: ["*"],
+                        opacity: 0.5,
+                        popupTemplate: TRCA_FloodHazard_Popup
+                    });
+
+                    var currentAddress, currentLongitude, currentLatitude;
+
+                    Config.apiKey = "AAPKc1741317cc7e440fba542230d43b64f6qv-biHp_RPTvithQQBlHPLtS9NrTQB3D-WxOE98eDkp-zVj4WLO5rQElv1FJqwKo";
+
+                    const map = new Map({
+                        basemap: "arcgis-topographic"
+                    });
+                    map.add(TRCA_RegulatedArea_FeatureLayer, 0);
+                    map.add(TRCA_FloodHazard_FeatureLayer, 1);
+
+                    const graphicsLayer = new GraphicsLayer();
+                    map.add(graphicsLayer);
+
+                    const point = { //Point
+                        type: "point",
+                        longitude: -79.380934,
+                        latitude: 43.647642
+                    };
+
+                    const simpleMarkerSymbol = {
+                        type: "simple-marker",
+                        color: "red",
+                        outline: {
+                            color: [255, 255, 255],
+                            width: 1
+                        },
+                        //Additional
+                        path: "M87.084,192c-0.456-5.272-0.688-10.6-0.688-16C86.404,78.8,162.34,0,256.004,0s169.6,78.8,169.6,176 c0,5.392-0.232,10.728-0.688,16h0.688c0,96.184-169.6,320-169.6,320s-169.6-223.288-169.6-320H87.084z M256.004,224 c36.392,1.024,66.744-27.608,67.84-64c-1.096-36.392-31.448-65.024-67.84-64c-36.392-1.024-66.744,27.608-67.84,64 C189.26,196.392,219.612,225.024,256.004,224z",
+                        size: 20
+                    };
+
+                    const view = new MapView({
+                        map: map,
+                        center: [-79.394080, 43.667820], //Long, Lat
+                        zoom: 10,
+                        container: "viewDiv"
+                    });
+                    let basemapToggle = new BasemapToggle({
+                        view: view,
+                        nextBasemap: "satellite"
+                    });
+
+                    const searchWidget = new Search({
+                        view: view,
+                        autoSelect: false
+                    });
+
+                    view.ui.add(searchWidget, {
+                        position: "top-right"
+                    });
+                    view.ui.add("info", {
+                        position: "bottom-right"
+                    });
+                    view.ui.add(basemapToggle, {
+                        position: "bottom-left"
+                    });
+
+                    // Action when pointer is moved on the map
+                    view.on("click", function (event){
+                        currentLongitude = event.mapPoint.longitude.toFixed(5);
+                        currentLatitude = event.mapPoint.latitude.toFixed(5);
+                        
+                        let geometryPoint = {
+                            type: "point",
+                            longitude: currentLongitude,
+                            latitude: currentLatitude
+                        };
+
+                        // Add pointer on map
+                        movePointer(geometryPoint);
+
+                        // Determine if address is within the GTA
+                        queryCityWards(cityWardsFeatureLayer, geometryPoint);
+                        queryAddress(parcelsFeatureLayer, geometryPoint);
+                        queryTRAC_Regulated_Areas(TRCA_RegulatedArea_FeatureLayer, geometryPoint);
+                        queryTRCA_FloodPlains(TRCA_FloodHazard_FeatureLayer, geometryPoint);
+                    });
+
+                    // Action when address search is completed
+                    searchWidget.on("search-complete", function(results){
+                        // Address search
+                        currentAddress = results.results[0].results[0].feature.attributes.Match_addr;
+                        document.getElementById("address").innerText = currentAddress;
+                        document.getElementById("startMessage").style.visibility = "hidden";
+
+                        // Retrieve geometry
+                        currentLatitude = results.results[0].results[0].feature.geometry.latitude;
+                        currentLongitude = results.results[0].results[0].feature.geometry.longitude;
+                        let geometryPoint = {
+                            type: "point",
+                            longitude: currentLongitude,
+                            latitude: currentLatitude
+                        };
+
+                        // Add pointer on map
+                        movePointer(geometryPoint);
+
+                        // Determine if address is within the GTA
+                        queryCityWards(cityWardsFeatureLayer, geometryPoint);
+                        queryTRAC_Regulated_Areas(TRCA_RegulatedArea_FeatureLayer, geometryPoint);
+                        queryTRCA_FloodPlains(TRCA_FloodHazard_FeatureLayer, geometryPoint);
+
+                    });
+
+                    // Query action on City wards
+                    function queryCityWards(featureLayer, geometry){
+                        const queryParameters = {
+                            spatialRelationship: "intersects",
+                            geometry: geometry,
+                            outFields: ["AREA_NAME"],
+                            returnGeometry: false
+                        };
+
+                        featureLayer.queryFeatures(queryParameters)
+                        .then((results) => {
+                            if(results.features.length == 0){
+                                document.getElementById("startMessage").style.visibility = "visible";
+                            } else{
+                                document.getElementById("startMessage").style.visibility = "hidden";
+                            }
+                        }).catch((error) => {
+                            console.log(error);
+                        });
+                    }
+
+                    // Query action on TRCA Regulated Areas
+                    function queryTRAC_Regulated_Areas(featureLayer, geometry){
+                        const queryParameters = {
+                            spatialRelationship: "intersects",
+                            geometry: geometry,
+                            outFields: ["*"],
+                            returnGeometry: false
+                        };
+
+                        featureLayer.queryFeatures(queryParameters)
+                        .then((results) => {
+                            if(results.features.length > 0){
+                                document.getElementById("regulatedResults").innerText = "Within regulated area";
+                                document.getElementById("regulatedResults").style.color = "orange";
+                                document.getElementById("regulatedResults").style.fontWeight = "bold";
+                            } else{
+                                document.getElementById("regulatedResults").innerText = "Not within regulated area";
+                                document.getElementById("regulatedResults").style.color = "black";
+                                document.getElementById("regulatedResults").style.fontWeight = "bold";
+                            }
+                        }).catch((error) => {
+                            console.log(error);
+                        });
+                    }
+
+                    // Query action on TRCA Flood Plains
+                    function queryTRCA_FloodPlains(featureLayer, geometry){
+                        const queryParameters = {
+                            spatialRelationship: "intersects",
+                            geometry: geometry,
+                            outFields: ["*"],
+                            returnGeometry: false
+                        };
+
+                        featureLayer.queryFeatures(queryParameters)
+                        .then((results) => {
+                            if(results.features.length > 0){
+                                document.getElementById("floodPlainResults").innerText = "Within flood hazard area";
+                                document.getElementById("floodPlainResults").style.color = "blue";
+                                document.getElementById("floodPlainResults").style.fontWeight = "bold";
+                            } else{
+                                document.getElementById("floodPlainResults").innerText = "Not within flood hazard area";
+                                document.getElementById("floodPlainResults").style.color = "black";
+                                document.getElementById("floodPlainResults").style.fontWeight = "bold";
+                            }
+                        }).catch((error) => {
+                            console.log(error);
+                        });
+                    }
+
+                    // Query action on Address from parcel
+                    function queryAddress(featureLayer, geometry){
+                        const queryParameters = {
+                            spatialRelationship: "intersects",
+                            geometry: geometry,
+                            outFields: ["ADDRESS_ID", "ADDRESS_POINT_ID", "ADDRESS_NUMBER", "LINEAR_NAME_FULL"],
+                            returnGeometry: false
+                        };
+
+                        // Query parcels layer
+                        featureLayer.queryFeatures(queryParameters)
+                        .then((results) => {
+                            if(results.features.length > 0){
+                                currentAddress = results.features[0].attributes.ADDRESS_NUMBER + " " + results.features[0].attributes.LINEAR_NAME_FULL;
+                                if(currentAddress != "null null"){
+                                    document.getElementById("address").innerText = currentAddress;
+                                } else {
+                                    document.getElementById("address").innerText = "";
+                                }
+                            }
+                        }).catch((error) => {
+                            console.log(error);
+                        });
+                    }
+
+                    // Helper Functions
+                    function movePointer(geometryPoint){
+                        graphicsLayer.removeAll();
+                        const pointGraphic = new Graphic({
+                            geometry: geometryPoint,
+                            symbol: simpleMarkerSymbol
+                        });
+                        graphicsLayer.add(pointGraphic);
+
+                        let opts = {
+                            duration: 1000  // Duration of animation will be 0.5 seconds
+                        };
+    
+                        view.goTo({
+                            target: pointGraphic,
+                            zoom: 16
+                        }, opts)
+                    }
+
+                    function styleLayer(value, color){
+                        return {
+                            "value": value,
+                            "symbol": {
+                                "type": "simple-fill",
+                                "color": color
+                            }
+                        };
+                    }
+                }
+            )
+        </script>
+
+    </head>
+    <body>
+        <div id="viewDiv"></div>
+        <div id="info" style="background-color:white;padding:10px;">
+            <div></div>
+            <span style="font-weight:bold;font-size:20;">Address: </span>
+            <span id="address"></span>
+            <div></div>
+            <span id="startMessage" style="color:red;font-weight:bold;">Please search for an address within the Greater Toronto Area to begin</span>
+            <div></div>
+            <span style="font-weight:bold;font-size:20;">TRCA Regulation: </span>
+            <span id="regulatedResults"></span>
+            <div></div>
+            <span style="font-weight:bold;font-size:20;">TRCA Flood Plain: </span>
+            <span id="floodPlainResults"></span>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,259 @@
+<html>
+    <head>
+        <title>Routing</title>
+
+        <style>
+            html,body,#viewDiv{
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+            }
+        </style>
+
+        <script src="https://js.arcgis.com/4.30/"></script>
+        <link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/light/main.css">
+
+        <script>
+            require(
+                ["esri/config", "esri/Map", "esri/views/MapView", "esri/Graphic", "esri/layers/FeatureLayer", "esri/widgets/Search", "esri/rest/route", "esri/rest/support/RouteParameters", "esri/rest/support/FeatureSet"],
+                function(Config, Map, MapView, Graphic, FeatureLayer, Search, route, RouteParameters, FeatureSet){
+                    Config.apiKey = "AAPKc1741317cc7e440fba542230d43b64f6qv-biHp_RPTvithQQBlHPLtS9NrTQB3D-WxOE98eDkp-zVj4WLO5rQElv1FJqwKo";
+                    
+                    const map = new Map({
+                        basemap: "arcgis/navigation"
+                    });
+
+                    const view = new MapView({
+                        container: "viewDiv",
+                        map: map,
+                        center: [-79.380934, 43.647642],
+                        zoom: 12
+                    });
+
+                    const addressFeatureLayer = new FeatureLayer({
+                        url: "https://services3.arcgis.com/b9WvedVPoizGfvfD/ArcGIS/rest/services/COTGEO_ADDRESS_POINT/FeatureServer/0",
+                        outFields: ["LINEAR_NAME_FULL", "MUNICIPALITY_NAME"]
+                    });
+
+                    const currentRedCamerasFeatureLayer = new FeatureLayer({
+                        url: "https://services3.arcgis.com/b9WvedVPoizGfvfD/ArcGIS/rest/services/Red_Light_Camera/FeatureServer/0",
+                        outFields: ["Main", "Side_1_Rou"]
+                    });
+
+                    map.add(currentRedCamerasFeatureLayer, 0);
+
+                    const futureRedCamerasFeatureLayer = new FeatureLayer({
+                        url: "https://services3.arcgis.com/b9WvedVPoizGfvfD/ArcGIS/rest/services/Future_Red_Light_Camera/FeatureServer/0"
+                    });
+
+                    //map.add(futureRedCamerasFeatureLayer, 1);
+
+                    // Address information
+                    view.ui.add("info", {
+                        position: "bottom-right"
+                    });
+                    
+                    // Location graphics
+                    var originGraphic, destinationGraphic;
+
+                    const startSearch = new Search({
+                        view: view,
+                        autoSelect: false,
+                        allPlaceholder: "Origin address"
+                    });
+                    view.ui.add(startSearch, {
+                        position: "top-right"
+                    });
+                    
+
+                    startSearch.on("search-complete", function(results){
+                        document.getElementById("startAddress").innerText = results.results[0].results[0].feature.attributes.Match_addr;
+                        view.graphics.removeAll();
+                        originGraphic = {
+                            type: "point",
+                            longitude: results.results[0].results[0].feature.geometry.longitude,
+                            latitude: results.results[0].results[0].feature.geometry.latitude
+                        };
+                        addGraphic("origin", originGraphic);
+                        if(destinationGraphic != null){
+                            addGraphic("destination", destinationGraphic);
+                            getRoute();
+                        }
+                    });
+
+                    // End location
+                    const endSearch = new Search({
+                        view: view,
+                        autoSelect: false,
+                        allPlaceholder: "Destination address"
+                    });
+                    view.ui.add(endSearch, {
+                        position: "top-right"
+                    });
+
+                    endSearch.on("search-complete", function(results){
+                        document.getElementById("endAddress").innerText = results.results[0].results[0].feature.attributes.Match_addr;
+                        view.graphics.removeAll();
+                        destinationGraphic = {
+                            type: "point",
+                            longitude: results.results[0].results[0].feature.geometry.longitude,
+                            latitude: results.results[0].results[0].feature.geometry.latitude
+                        };
+                        addGraphic("destination", destinationGraphic);
+                        if(originGraphic != null){
+                            addGraphic("origin", originGraphic);
+                            getRoute();
+                        }
+                    });
+
+                    const routeUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World";
+
+                    view.on("click", function(event) {
+                        if(view.graphics.length === 0) {
+                            addGraphic("origin", event.mapPoint);
+                            queryAddressFeatureLayer("origin", addressFeatureLayer, event.mapPoint);
+                        } else if (view.graphics.length === 1) {
+                            addGraphic("destination", event.mapPoint);
+                            queryAddressFeatureLayer("destination", addressFeatureLayer, event.mapPoint);
+                            getRoute();
+                        } else {
+                            view.graphics.removeAll();
+                            document.getElementById("startAddress").innerText = "";
+                            document.getElementById("endAddress").innerText = "";
+                            document.getElementById("redCameraResults").innerText = "";
+                            addGraphic("origin", event.mapPoint);
+                            queryAddressFeatureLayer("origin", addressFeatureLayer, event.mapPoint);
+                        }
+                    });
+
+                    //Helper Function
+                    function addGraphic(type, point) {
+                        const graphic = new Graphic({
+                            symbol: {
+                                type: "simple-marker",
+                                color: (type === "origin") ? "blue" : "red",
+                                size: 20,
+                                outline: {
+                                    color: [255, 255, 255],
+                                    width: 1
+                                },
+                                path: "M87.084,192c-0.456-5.272-0.688-10.6-0.688-16C86.404,78.8,162.34,0,256.004,0s169.6,78.8,169.6,176 c0,5.392-0.232,10.728-0.688,16h0.688c0,96.184-169.6,320-169.6,320s-169.6-223.288-169.6-320H87.084z M256.004,224 c36.392,1.024,66.744-27.608,67.84-64c-1.096-36.392-31.448-65.024-67.84-64c-36.392-1.024-66.744,27.608-67.84,64 C189.26,196.392,219.612,225.024,256.004,224z"
+                            },
+                            geometry: point
+                        });
+                        view.graphics.add(graphic);
+                    }
+
+                    function getRoute() {
+                        const routeParams = new RouteParameters({
+                            stops: new FeatureSet({
+                                features: view.graphics.toArray()
+                            }),
+                            returnDirections: true
+                        });
+
+                        route.solve(routeUrl, routeParams)
+                        .then(function(data) {
+                            data.routeResults.forEach(function(result) {
+                                const outlinelineGeometry = {
+                                    type: "polyline",
+                                    paths: result.route.geometry.paths
+                                };
+                                queryRedLightsFeatureLayer(currentRedCamerasFeatureLayer, outlinelineGeometry)
+                                
+                                // Nav line
+                                result.route.symbol = {
+                                    type: "simple-line",
+                                    color: [5, 150, 255],
+                                    width: 3
+                                };
+                                view.graphics.add(result.route);
+                            });
+                        })
+                    }
+
+                    function queryRedLightsFeatureLayer(featureLayer, geometry){
+                        const queryParameters = {
+                            spatialRelationship: "intersects",
+                            geometry: geometry,
+                            outFields: ["Main", "Side_1_Rou"],
+                            returnGeometry: true,
+                            distance: 20,
+                            units: "feet"
+                        };
+
+                        featureLayer.queryFeatures(queryParameters)
+                        .then((results) => {
+                            var displayString = "";
+                            if(results.features.length == 0){
+                                document.getElementById("redCameraResults").innerText = "";
+                            }
+                            for(i in results.features){
+                                let iterString = "Intersection at " +results.features[i].attributes.Main + " and " + results.features[i].attributes.Side_1_Rou
+                                displayString += iterString + "\n";
+                                document.getElementById("redCameraResults").innerText = displayString;
+                            }
+                        }).catch((error) => {
+                            console.log(error);
+                        });
+                    };
+
+                    function queryAddressFeatureLayer(type, featureLayer, geometry){
+                        const queryParameters = {
+                            spatialRelationship: "intersects",
+                            geometry: geometry,
+                            outFields: ["LINEAR_NAME_FULL", "MUNICIPALITY_NAME"],
+                            returnGeometry: true,
+                            distance: 100,
+                            units: "feet"
+                        };
+
+                        featureLayer.queryFeatures(queryParameters)
+                        .then((results) => {
+                            if(type == "origin"){
+                                console.log("Origin");
+                                if(results.features.length > 0){
+                                    let iterString = results.features[0].attributes.LINEAR_NAME_FULL + ", " + results.features[0].attributes.MUNICIPALITY_NAME;
+                                    document.getElementById("startAddress").innerText = iterString;
+                                    console.log("Address found:", iterString);
+                                } else {
+                                    document.getElementById("startAddress").innerText = "N/A";
+                                    console.log("Address NA");
+                                }
+                            }
+                            if(type == "destination"){
+                                if(results.features.length > 0 ){
+                                    let iterString = results.features[0].attributes.LINEAR_NAME_FULL + ", " + results.features[0].attributes.MUNICIPALITY_NAME;
+                                    document.getElementById("endAddress").innerText = iterString;
+                                } else {
+                                    document.getElementById("endAddress").innerText = "N/A";
+                                }
+                            }
+                        }).catch((error) => {
+                            console.log(error);
+                        });
+                    };
+
+                    
+                }
+            )
+        </script>
+        
+    </head>
+    <body>
+        <div id="viewDiv"></div>
+        <div id="info" style="background-color:white;padding:10px;">
+            <div></div>
+            <span style="font-weight:bold;font-size:20;"> Start address: </span>
+            <span id="startAddress"></span>
+            <div></div>
+            <span style="font-weight:bold;font-size:20;"> End address: </span>
+            <span id="endAddress"></span>
+            <div></div>
+            <span style="font-weight:bold;font-size:20;"> Red traffic cameras along the way: </span>
+            <div></div>
+            <span id="redCameraResults"></span>
+        </div>
+    </body>
+</html>
